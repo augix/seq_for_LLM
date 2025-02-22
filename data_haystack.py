@@ -4,8 +4,8 @@
 # 1. Create a random haystack sequence, leave 0 for mask
 # 2. take the tail of the haystack as question-answer pair, 
 # question is the first half of the qa, answer is the second half
-# 3. insert the question-answer pair at random position
-# 4. mask the answer portion
+# 3. insert the question-answer pair at random position along the haystack
+# 4. mask the answer portion at the tail of the haystack
 # 5. Return positions, masked input, target, and mask
 import torch
 from torch.utils.data import Dataset, DataLoader
