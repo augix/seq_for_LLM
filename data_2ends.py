@@ -6,23 +6,24 @@ from torch.utils.data import Dataset, DataLoader
 # --------------------------------
 #  Create data for testing
 # --------------------------------
-def make_seq(n_input_values, seq_len):
+def make_seq(n_input_values, seq_len, end_len):
     seq = torch.randint(low=1, high=n_input_values, size=(1, seq_len)) # leave 0 for mask
-    # make 2nd half of sequence equal to 1st half
-    half_len = seq_len // 2
-    seq[:, half_len:] = seq[:, :half_len].flip(1)
+    # make the 2 ends of sequence equal to each other
+    seq[:, :end_len] = seq[:, -end_len:]
     return seq
 
-def masking(seq, mask_frac):
-    seq_len = seq.size(1)
-    mask = torch.rand(size=(1, seq_len)) < mask_frac
-    masked_seq = torch.where(mask, torch.zeros_like(seq), seq)
+def masking(seq, end_len):
+    # mask the 2nd end of sequence
+    mask = torch.zeros_like(seq)
+    mask[:, -end_len:] = 1  # Mask the second end
+    masked_seq = seq.clone()
+    masked_seq[:, -end_len:] = 0  # Set masked values to 0
     return masked_seq, mask
 
 def make_record(config):
-    seq = make_seq(config.n_input_values, config.seq_len)
+    seq = make_seq(config.n_input_values, config.seq_len, config.end_len)
     ids = torch.arange(config.seq_len).reshape(1, -1)
-    masked_seq, mask = masking(seq, config.mask_frac)
+    masked_seq, mask = masking(seq, config.end_len)
     return {'pos_id': ids, 'input': masked_seq, 'target': seq, 'mask': mask}
 
 def make_batch(config):
@@ -34,7 +35,7 @@ def make_batch(config):
         'mask': torch.cat([record['mask'] for record in records])}
     return batch
 
-class MirrorSeqDataset(Dataset):
+class TwoEndsDataset(Dataset):
     def __init__(self, config):
         self.config = config
     
@@ -54,7 +55,7 @@ def make_dataloader(config, shuffle=True):
     if config.seq_len % 2 != 0:
         raise ValueError("seq_len must be an even number")
         
-    dataset = MirrorSeqDataset(config)
+    dataset = TwoEndsDataset(config)
     dataloader = DataLoader(
         dataset,
         batch_size=config.batch_size,

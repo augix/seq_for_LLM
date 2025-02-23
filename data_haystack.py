@@ -79,6 +79,18 @@ def make_record(config):
         'needle_in_haystack': needle_in_haystack
     }
 
+def make_batch(config):
+    # make a batch of records
+    records = [make_record(config) for _ in range(config.batch_size)]
+    batch = {
+        'pos_id': torch.cat([record['pos_id'] for record in records]),
+        'input': torch.cat([record['input'] for record in records]),
+        'target': torch.cat([record['target'] for record in records]),
+        'mask': torch.cat([record['mask'] for record in records]),
+        'needle_in_haystack': torch.cat([record['needle_in_haystack'] for record in records])
+    }
+    return batch
+
 class HaystackDataset(Dataset):
     def __init__(self, config):
         self.config = config
